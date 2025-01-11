@@ -15,3 +15,35 @@
 	justify-content: space-between;
 	align-items: center;
 }
+
+.arrows {
+	display: flex;
+	align-items: center;
+	justify-content: space-between; /* Place arrows at the ends */
+	gap: 20px; /* Add space between arrows and content */
+	width: 100%; /* Ensure the container takes full width */
+}
+@media (max-width: 1024px) {
+	.arrows {
+		gap: 10px;
+	}
+}
+
+.arrows button {
+	background: none; /* Remove button background */
+	border: none; /* Remove button borders */
+	cursor: pointer; /* Change cursor to pointer */
+	padding: 10px; /* Add some padding for better click area */
+}
+
+.arrows button:disabled {
+	opacity: 0.5; /* Dim the disabled button */
+	cursor: not-allowed; /* Show not-allowed cursor */
+}
+
+.weather-content {
+	flex-grow: 1; /* Allow WeatherContent to grow horizontally */
+	display: flex;
+	align-items: center; /* Center align content vertically */
+	justify-content: center; /* Center align content horizontally */
+}

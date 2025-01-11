@@ -1,6 +1,7 @@
 .dates-wrapper {
 	display: flex;
 	flex-direction: row;
+	flex-grow: 1;
 	gap: 20px;
 	justify-content: space-between;
 	margin-bottom: 20px;
@@ -11,6 +12,10 @@
 	}
 }
 
-.color-brown {
-	color: brown;
+.color-next-day {
+	color: #ff6700;
+}
+
+.color-nextweek-day {
+	color: #3a6ea5;
 }

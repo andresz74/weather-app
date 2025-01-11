@@ -97,7 +97,8 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 						}
 
 						return '#000'; // Default color for other hours
-					})
+					}),
+					fontSize: '11px'
 				}
 			}
 		},
@@ -213,7 +214,8 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 						}
 
 						return '#000'; // Default color for other hours
-					})
+					}),
+					fontSize: '11px'
 				}
 			}
 		},

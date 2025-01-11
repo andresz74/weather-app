@@ -38,6 +38,7 @@ const ApexChart: React.FC<ApexChartProps> = ({
 				series={series}
 				type={type || 'line'}
 				height={height}
+				width={'100%'}
 			/>
 			<div className="graph-bottom">{graphBottom}</div>
 		</div>

@@ -3,6 +3,7 @@
 	flex-direction: column;
 	flex: 1;
 	font-weight: 500;
+	width: 100%;
 }
 
 .graph-bottom {

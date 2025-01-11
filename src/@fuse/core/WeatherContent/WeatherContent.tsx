@@ -79,6 +79,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				}
 			}
 		},
+		colors: ['#004E98'],
 		stroke: {
 			curve: 'smooth' as const
 		},
@@ -111,28 +112,45 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			xaxis: [
 				{
 					x: nextDateCategories[1], // First hour (e.g., "11:00 AM")
-					borderColor: '#FF4560',
+					borderColor: '#3F88C5',
 					label: {
 						text: nextDateCategories[1],
 						style: {
 							color: '#FFF',
-							background: '#FF4560'
+							background: '#3F88C5'
 						}
 					}
 				},
 				{
 					x: nextDateCategories[nextDateCategories.length - 2], // Last hour (e.g., "06:00 PM")
-					borderColor: '#775DD0',
+					borderColor: '#3F88C5',
 					label: {
 						text: nextDateCategories[nextDateCategories.length - 2],
 						style: {
 							color: '#FFF',
-							background: '#775DD0'
+							background: '#3F88C5'
 						}
 					}
 				}
 			]
-		}
+		},
+		responsive: [
+			{
+				breakpoint: 768, // Mobile breakpoint
+				options: {
+					chart: {
+						height: 250 // Smaller height for mobile
+					},
+					xaxis: {
+						labels: {
+							style: {
+								fontSize: '10px' // Smaller font size for mobile
+							}
+						}
+					}
+				}
+			}
+		]
 	};
 	const nextDateSeries = [
 		{
@@ -176,6 +194,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				}
 			}
 		},
+		colors: ['#004E98'],
 		stroke: {
 			curve: 'smooth' as const
 		},
@@ -209,28 +228,45 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			xaxis: [
 				{
 					x: nextWeekDateCategories[1], // First hour (e.g., "11:00 AM")
-					borderColor: '#FF4560',
+					borderColor: '#3F88C5',
 					label: {
 						text: nextWeekDateCategories[1],
 						style: {
 							color: '#FFF',
-							background: '#FF4560'
+							background: '#3F88C5'
 						}
 					}
 				},
 				{
 					x: nextWeekDateCategories[nextWeekDateCategories.length - 2], // Last hour (e.g., "06:00 PM")
-					borderColor: '#775DD0',
+					borderColor: '#3F88C5',
 					label: {
 						text: nextWeekDateCategories[nextWeekDateCategories.length - 2],
 						style: {
 							color: '#FFF',
-							background: '#775DD0'
+							background: '#3F88C5'
 						}
 					}
 				}
 			]
-		}
+		},
+		responsive: [
+			{
+				breakpoint: 768, // Mobile breakpoint
+				options: {
+					chart: {
+						height: 250 // Smaller height for mobile
+					},
+					xaxis: {
+						labels: {
+							style: {
+								fontSize: '10px' // Smaller font size for mobile
+							}
+						}
+					}
+				}
+			}
+		]
 	};
 	const nextWeekDateSeries = [
 		{
@@ -294,7 +330,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				series={nextDateSeries}
 				type="line"
 				height={350}
-				graphTitle={<span className="color-brown">{formatDateToDescription(nextDate) || 'N/A'}</span>}
+				graphTitle={<span className="color-next-day">{formatDateToDescription(nextDate) || 'N/A'}</span>}
 				graphIcon={
 					<FuseSvgIcon
 						className="text-48"
@@ -313,7 +349,9 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				series={nextWeekDateSeries}
 				type="line"
 				height={350}
-				graphTitle={formatDateToDescription(nextWeekDate) || 'N/A'}
+				graphTitle={
+					<span className="color-nextweek-day">{formatDateToDescription(nextWeekDate) || 'N/A'}</span>
+				}
 				graphIcon={
 					<FuseSvgIcon
 						className="text-48"

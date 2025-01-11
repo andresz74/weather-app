@@ -3,6 +3,8 @@ import React from 'react';
 import WeatherContent from '@fuse/core/WeatherContent';
 import { apiWeather, WeatherData, WeatherDayData, WeatherHourData } from '@/utils/apiWeather';
 import FusePageSimple from '@fuse/core/FusePageSimple';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import PinDrop from '@mui/icons-material/PinDrop';
 import { styled } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -104,6 +106,7 @@ const Weather = () => {
 		setNextDateHourlyData(nextDateData?.rangeHours || []);
 		setNextWeekDateHourlyData(nextWeekDateData?.rangeHours || []);
 	};
+
 	React.useEffect(() => {
 		const getNextDateForDay = (day: string): { next: string; nextWeek: string } => {
 			const today = new Date();
@@ -168,6 +171,26 @@ const Weather = () => {
 		setDebounceTimeout(timeout);
 	};
 
+	// Calculate dates relative to the current nextDate
+	const calculateDates = (offset: number) => {
+		if (!nextDate) return;
+
+		const currentNextDate = new Date(nextDate);
+		const currentNextWeekDate = new Date(nextWeekDate || nextDate);
+
+		// Move dates by the offset
+		currentNextDate.setDate(currentNextDate.getDate() + offset);
+		currentNextWeekDate.setDate(currentNextWeekDate.getDate() + offset);
+
+		const formatDate = (date: Date) => date.toISOString().split('T')[0];
+		setNextDate(formatDate(currentNextDate));
+		setNextWeekDate(formatDate(currentNextWeekDate));
+	};
+
+	// Navigation handlers
+	const handleNext = () => calculateDates(7);
+	const handlePrevious = () => calculateDates(-7);
+
 	return (
 		<Root
 			header={
@@ -230,19 +253,36 @@ const Weather = () => {
 			}
 			content={
 				<div className="p-24">
-					{weather ? (
-						<WeatherContent
-							nextDate={nextDate}
-							nextDateWeather={nextDateWeather}
-							nextDateHourlyData={nextDateHourlyData}
-							nextWeekDate={nextWeekDate}
-							nextWeekDateWeather={nextWeekDateWeather}
-							nextWeekDateHourlyData={nextWeekDateHourlyData}
-							selectedTime={selectedTime}
-						/>
-					) : (
-						<p>Loading...</p>
-					)}
+					<div className="arrows">
+						<button
+							onClick={handlePrevious}
+							disabled={
+								!nextDate || new Date(nextDate).getTime() <= new Date().getTime() // Disable if nextDate is today or earlier
+							}
+						>
+							<ArrowBackIosIcon />
+						</button>
+
+						<div className="weather-content">
+							{weather ? (
+								<WeatherContent
+									nextDate={nextDate}
+									nextDateWeather={nextDateWeather}
+									nextDateHourlyData={nextDateHourlyData}
+									nextWeekDate={nextWeekDate}
+									nextWeekDateWeather={nextWeekDateWeather}
+									nextWeekDateHourlyData={nextWeekDateHourlyData}
+									selectedTime={selectedTime}
+								/>
+							) : (
+								<p>Loading...</p>
+							)}
+						</div>
+
+						<button onClick={handleNext}>
+							<ArrowForwardIosIcon />
+						</button>
+					</div>
 				</div>
 			}
 		/>

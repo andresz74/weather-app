@@ -1,0 +1,16 @@
+.dates-wrapper {
+	display: flex;
+	flex-direction: row;
+	gap: 20px;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+@media (max-width: 1024px) {
+	.dates-wrapper {
+		flex-direction: column;
+	}
+}
+
+.color-brown {
+	color: brown;
+}

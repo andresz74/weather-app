@@ -1,0 +1,17 @@
+.headerWrap {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 20px;
+}
+
+.locationWrap {
+	display: flex;
+	align-items: center;
+}
+
+.dayTimeWrap {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}

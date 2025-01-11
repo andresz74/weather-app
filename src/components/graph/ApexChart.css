@@ -1,0 +1,30 @@
+.graph-wrapper {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	font-weight: 500;
+}
+
+.graph-bottom {
+	display: flex;
+	justify-content: center;
+	text-transform: uppercase;
+}
+
+.graph-top {
+	display: flex;
+	flex-direction: column;
+}
+
+.nextday-top h2 {
+	color: brown;
+}
+
+.graph-icon {
+	display: flex;
+}
+
+.graph-data {
+	display: flex;
+	align-items: center;
+}

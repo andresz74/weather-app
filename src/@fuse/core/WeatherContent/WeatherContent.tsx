@@ -2,8 +2,8 @@
 import React from 'react';
 import { WeatherDayData, WeatherHourData } from '@/utils/apiWeather';
 import ApexChart from '@/components/graph/ApexChart';
+import WeatherIcon from '@/components/weather-icon/WeatherIcon';
 import './WeatherContent.css';
-import FuseSvgIcon from '@fuse/core/FuseSvgIcon';
 
 /**
  * WeatherContent is a React component used to render weather-related content.
@@ -163,8 +163,22 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 		return (
 			<>
 				<p>{nextDateWeather.description}</p>
-				<p>winds {nextDateWeather.windspeed} mph</p>
-				<p>{nextDateWeather.precipprob === 0 ? 'No rain' : `${nextDateWeather.precipprob}% chance rain`}</p>
+				<p>
+					<WeatherIcon
+						icon="wind"
+						size={16}
+						className="inline-block mr-8"
+					/>
+					winds {nextDateWeather.windspeed} mph
+				</p>
+				<p>
+					<WeatherIcon
+						icon="rain"
+						size={16}
+						className="inline-block mr-8"
+					/>
+					{nextDateWeather.precipprob === 0 ? 'No rain' : `${nextDateWeather.precipprob}% chance rain`}
+				</p>
 			</>
 		);
 	};
@@ -280,8 +294,20 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 		return (
 			<>
 				<p>{nextWeekDateWeather.description}</p>
-				<p>winds {nextWeekDateWeather.windspeed} mph</p>
 				<p>
+					<WeatherIcon
+						icon="wind"
+						size={16}
+						className="inline-block mr-8"
+					/>
+					winds {nextWeekDateWeather.windspeed} mph
+				</p>
+				<p>
+					<WeatherIcon
+						icon="rain"
+						size={16}
+						className="inline-block mr-8"
+					/>
 					{nextWeekDateWeather.precipprob === 0
 						? 'No rain'
 						: `${nextWeekDateWeather.precipprob}% chance rain`}
@@ -333,15 +359,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				type="line"
 				height={350}
 				graphTitle={<span className="color-next-day">{formatDateToDescription(nextDate) || 'N/A'}</span>}
-				graphIcon={
-					<FuseSvgIcon
-						className="text-48"
-						size={120}
-						color="action"
-					>
-						heroicons-solid:sun
-					</FuseSvgIcon>
-				}
+				graphIcon={<WeatherIcon icon={nextDateWeather.icon} />}
 				graphDescription={nextDateDescription()}
 				graphBottom={<p>{selectedTime}</p>}
 			/>
@@ -354,15 +372,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				graphTitle={
 					<span className="color-nextweek-day">{formatDateToDescription(nextWeekDate) || 'N/A'}</span>
 				}
-				graphIcon={
-					<FuseSvgIcon
-						className="text-48"
-						size={120}
-						color="action"
-					>
-						heroicons-solid:sun
-					</FuseSvgIcon>
-				}
+				graphIcon={<WeatherIcon icon={nextWeekDateWeather.icon} />}
 				graphDescription={nextWeekDateDescription()}
 				graphBottom={<p>{selectedTime}</p>}
 			/>

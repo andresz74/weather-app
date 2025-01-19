@@ -97,11 +97,17 @@ export class FetchApiError extends Error {
 export const apiWeather = async (location: string, date1: string, date2?: string): Promise<WeatherData> => {
 	try {
 		const response = await fetch(
-			`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${location}/${date1}/${date2}?key=${API_KEY} `
+			`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${location}/${date1}/${date2}?key=${API_KEY}`
 		);
 
 		if (!response.ok) {
-			throw new FetchApiError(response.status, await response.json());
+			const errorData = await response.json();
+
+			if (response.status === 426) {
+				throw new FetchApiError(426, { message: 'Quota exceeded. Please try again tomorrow.' });
+			}
+
+			throw new FetchApiError(response.status, errorData);
 		}
 
 		const data = await response.json();

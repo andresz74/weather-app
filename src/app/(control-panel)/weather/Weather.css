@@ -1,16 +1,16 @@
-.headerWrap {
+.header-wrap {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	padding: 0 20px;
 }
 
-.locationWrap {
+.location-wrap {
 	display: flex;
 	align-items: center;
 }
 
-.dayTimeWrap {
+.day-time-wrap {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -46,4 +46,11 @@
 	display: flex;
 	align-items: center; /* Center align content vertically */
 	justify-content: center; /* Center align content horizontally */
+}
+
+.error-message {
+	color: red;
+	font-size: 1rem;
+	margin-bottom: 1rem;
+	text-align: center;
 }

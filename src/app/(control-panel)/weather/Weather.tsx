@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import React from 'react';
 import WeatherContent from '@fuse/core/WeatherContent';
-import { apiWeather, FetchApiError, WeatherData, WeatherDayData, WeatherHourData } from '@/utils/apiWeather';
 import FusePageSimple from '@fuse/core/FusePageSimple';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -10,6 +9,8 @@ import { styled } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchWeatherRequest } from '@/store/weatherSlice';
 import './Weather.css';
 // import weatherMockData from './WeatherMock.json';
 
@@ -26,8 +27,6 @@ const Root = styled(FusePageSimple)(({ theme }) => ({
 }));
 
 const Weather = () => {
-	const [error, setError] = React.useState<string | null>(null);
-
 	const days = [
 		{ value: 'monday', label: 'Every Monday' },
 		{ value: 'tuesday', label: 'Every Tuesday' },
@@ -44,65 +43,18 @@ const Weather = () => {
 		{ value: 'evening', label: 'Evening' }
 	];
 
-	const [weather, setWeather] = React.useState<WeatherData | null>(null);
 	const [location, setLocation] = React.useState<string>('Dolores Park, SF');
 	const [selectedDay, setSelectedDay] = React.useState<string>('friday');
 	const [selectedTime, setSelectedTime] = React.useState<string>('afternoon');
 	const [nextDate, setNextDate] = React.useState<string | null>(null);
 	const [nextWeekDate, setNextWeekDate] = React.useState<string | null>(null);
-	const [nextDateWeather, setNextDateWeather] = React.useState<WeatherDayData | null>(null);
-	const [nextWeekDateWeather, setNextWeekDateWeather] = React.useState<WeatherDayData | null>(null);
-	// Define state for hourly data to be used for the graph
-	const [nextDateHourlyData, setNextDateHourlyData] = React.useState<WeatherHourData[]>([]);
-	const [nextWeekDateHourlyData, setNextWeekDateHourlyData] = React.useState<WeatherHourData[]>([]);
 
-	const fetchWeatherData = async () => {
-		try {
-			if (!nextDate || !nextWeekDate) return;
+	const dispatch = useAppDispatch();
+	const { nextDateWeather, nextWeekDateWeather, nextDateHourlyData, nextWeekDateHourlyData, loading, error } =
+		useAppSelector((state) => state.weather);
 
-			setError(null); // Clear previous error messages
-			const weatherData = await apiWeather(location, nextDate, nextWeekDate);
-			setWeather(weatherData);
-
-			// Map selectedTime to hour range
-			const timeRanges: Record<string, [number, number]> = {
-				morning: [7, 13],
-				afternoon: [11, 18],
-				evening: [16, 22]
-			};
-
-			const selectedRange = timeRanges[selectedTime] || [0, 23];
-
-			const extractWeatherForDates = (data: WeatherData, dates: string[]) => {
-				return dates.map((date) => {
-					const dayData = data.days.find((day) => day.datetime === date);
-
-					if (!dayData) return null;
-
-					const rangeHours = dayData.hours.filter((hour) => {
-						const fullDatetime = `${dayData.datetime}T${hour.datetime}`;
-						const hourOfDay = new Date(fullDatetime).getHours();
-						return hourOfDay >= selectedRange[0] && hourOfDay <= selectedRange[1];
-					});
-
-					return { ...dayData, rangeHours };
-				});
-			};
-
-			const weatherByDates = extractWeatherForDates(weatherData, [nextDate, nextWeekDate]);
-			const [nextDateData, nextWeekDateData] = weatherByDates;
-
-			setNextDateWeather(nextDateData || null);
-			setNextWeekDateWeather(nextWeekDateData || null);
-			setNextDateHourlyData(nextDateData?.rangeHours || []);
-			setNextWeekDateHourlyData(nextWeekDateData?.rangeHours || []);
-		} catch (err) {
-			if (err instanceof FetchApiError && err.status === 426) {
-				setError('Quota exceeded. Please try again tomorrow.');
-			} else {
-				setError('An unexpected error occurred. Please try again later.');
-			}
-		}
+	const fetchWeatherData = () => {
+		dispatch(fetchWeatherRequest({ location, date1: nextDate, date2: nextWeekDate, selectedTime: selectedTime }));
 	};
 
 	React.useEffect(() => {
@@ -150,7 +102,9 @@ const Weather = () => {
 	}, [selectedDay]);
 
 	React.useEffect(() => {
-		fetchWeatherData();
+		if (nextDate && nextWeekDate) {
+			fetchWeatherData();
+		}
 	}, [nextDate, nextWeekDate, selectedTime]);
 
 	const [debounceTimeout, setDebounceTimeout] = React.useState<NodeJS.Timeout | null>(null);
@@ -251,19 +205,20 @@ const Weather = () => {
 			}
 			content={
 				<div className="p-24">
+					{loading && <p>Loading...</p>}
 					{error && <p className="error-message">{error}</p>}
-					<div className="arrows">
-						<button
-							onClick={handlePrevious}
-							disabled={
-								!nextDate || new Date(nextDate).getTime() <= new Date().getTime() // Disable if nextDate is today or earlier
-							}
-						>
-							<ArrowBackIosIcon />
-						</button>
+					{nextDateWeather && nextWeekDateWeather && (
+						<div className="arrows">
+							<button
+								onClick={handlePrevious}
+								disabled={
+									!nextDate || new Date(nextDate).getTime() <= new Date().getTime() // Disable if nextDate is today or earlier
+								}
+							>
+								<ArrowBackIosIcon />
+							</button>
 
-						<div className="weather-content">
-							{weather ? (
+							<div className="weather-content">
 								<WeatherContent
 									nextDate={nextDate}
 									nextDateWeather={nextDateWeather}
@@ -273,15 +228,13 @@ const Weather = () => {
 									nextWeekDateHourlyData={nextWeekDateHourlyData}
 									selectedTime={selectedTime}
 								/>
-							) : (
-								<p>Loading...</p>
-							)}
-						</div>
+							</div>
 
-						<button onClick={handleNext}>
-							<ArrowForwardIosIcon />
-						</button>
-					</div>
+							<button onClick={handleNext}>
+								<ArrowForwardIosIcon />
+							</button>
+						</div>
+					)}
 				</div>
 			}
 		/>

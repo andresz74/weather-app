@@ -2,6 +2,8 @@
 
 ![weather app](http://zenteno.org/public_assets/weather-app-01.png)
 
+**Demo**: https://weather.andreszenteno.com/weather
+
 A responsive web application for checking weather forecasts for a selected location and time. The app dynamically fetches weather data from an API and visualizes it with interactive charts.
 
 ## Features
@@ -33,7 +35,7 @@ A responsive web application for checking weather forecasts for a selected locat
     ```
 
 2. **Install Dependencies**:
-   Make sure you have Node.js and npm or Yarn installed.
+   Make sure you have Node.js and npm installed.
 
     ```bash
     npm install
@@ -43,7 +45,7 @@ A responsive web application for checking weather forecasts for a selected locat
    Create a `.env` file at the root and add the following variables:
 
     ```env
-    REACT_APP_API_BASE_URL=<Your API Base URL>
+    VITE_API_BASE_URL=<Your API Base URL>
     ```
 
 4. **Run the App**:
@@ -99,8 +101,6 @@ Customize graphs by editing the `options` and `series` props in `WeatherContent.
 
     ```bash
     npm run build
-    # or
-    yarn build
     ```
 
 2. **Deploy**:

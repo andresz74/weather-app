@@ -1,22 +1,82 @@
-/* eslint-disable no-console */
 import React from 'react';
 import { WeatherDayData, WeatherHourData } from '@/utils/apiWeather';
 import ApexChart from '@/components/graph/ApexChart';
 import WeatherIcon from '@/components/weather-icon/WeatherIcon';
+import { useTranslation } from 'react-i18next';
 import './WeatherContent.css';
 
-/**
- * WeatherContent is a React component used to render weather-related content.
- * It accepts `nextDate` and `nextWeekDate` as props, displaying weather-related data.
- */
 type WeatherContentProps = {
 	nextDate: string | null;
-	nextDateWeather: WeatherDayData;
+	nextDateWeather: WeatherDayData | null;
 	nextDateHourlyData: WeatherHourData[];
 	nextWeekDate: string | null;
-	nextWeekDateWeather: WeatherDayData;
+	nextWeekDateWeather: WeatherDayData | null;
 	nextWeekDateHourlyData: WeatherHourData[];
 	selectedTime: string;
+};
+
+const getDateCategories = (date: string, hourlyData: WeatherHourData[]): string[] => {
+	return hourlyData.map((hour) => {
+		const fullDatetime = `${date}T${hour.datetime}`;
+		return new Date(fullDatetime).toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	});
+};
+
+const extractTemperatureRange = (data: WeatherHourData[]): { maxTemp: number; minTemp: number } => {
+	if (data.length === 0) {
+		return { maxTemp: 0, minTemp: 0 };
+	}
+
+	const temperatures = data.map((hour) => hour.temp);
+	const maxTemp = Math.max(...temperatures);
+	const minTemp = Math.min(...temperatures);
+
+	return { maxTemp: maxTemp + 1, minTemp: minTemp - 1 };
+};
+
+const getLabelColors = (categories: string[]): string[] => {
+	if (categories.length === 0) {
+		return [];
+	}
+
+	const first = categories[0];
+	const last = categories[categories.length - 1];
+
+	return categories.map((hour) => (hour === first || hour === last ? '#AAA' : '#000'));
+};
+
+const getXAxisAnnotations = (categories: string[]) => {
+	if (categories.length < 3) {
+		return [];
+	}
+
+	return [
+		{
+			x: categories[1],
+			borderColor: '#3F88C5',
+			label: {
+				text: categories[1],
+				style: {
+					color: '#FFF',
+					background: '#3F88C5'
+				}
+			}
+		},
+		{
+			x: categories[categories.length - 2],
+			borderColor: '#3F88C5',
+			label: {
+				text: categories[categories.length - 2],
+				style: {
+					color: '#FFF',
+					background: '#3F88C5'
+				}
+			}
+		}
+	];
 };
 
 const WeatherContent: React.FC<WeatherContentProps> = ({
@@ -28,33 +88,47 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 	nextWeekDateHourlyData,
 	selectedTime
 }) => {
-	console.log(nextDateHourlyData);
-	// Prepare chart data for Next Date
-	const getDateCategories = (date: string, hourlyData: WeatherHourData[]): string[] => {
-		return hourlyData.map((hour) => {
-			// Combine the date and time for a valid ISO datetime
-			const fullDatetime = `${date}T${hour.datetime}`;
-			return new Date(fullDatetime).toLocaleTimeString([], {
-				hour: '2-digit',
-				minute: '2-digit'
-			});
+	const { t, i18n } = useTranslation('weatherPage');
+
+	const formatDateToDescription = (dateString: string): string => {
+		const date = new Date(`${dateString}T00:00:00`);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const diffDays = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+		const weekday = date.toLocaleDateString(i18n.language, { weekday: 'long' });
+
+		const description =
+			diffDays >= 0 && diffDays < 7 ? t('THIS_DAY', { day: weekday }) : t('NEXT_DAY', { day: weekday });
+
+		const dayOfMonth = date.getDate();
+		const ordinalSuffix = (n: number): string => {
+			const suffixes = [t('ORDINAL_TH'), t('ORDINAL_ST'), t('ORDINAL_ND'), t('ORDINAL_RD')];
+			const value = n % 100;
+			return suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0];
+		};
+
+		return t('THE_DAY_SUFFIX', {
+			description,
+			dayWithOrdinal: `${dayOfMonth}${ordinalSuffix(dayOfMonth)}`
 		});
 	};
 
-	const extractTemperatureRange = (data) => {
-		// Extract temperatures
-		const temperatures = data.map((hour) => hour.temp);
-
-		// Find max and min temperatures
-		const maxTemp = Math.max(...temperatures);
-		const minTemp = Math.min(...temperatures);
-
-		// Add gaps
-		const adjustedMax = maxTemp + 1;
-		const adjustedMin = minTemp - 1;
-
-		return { maxTemp: adjustedMax, minTemp: adjustedMin };
+	const isWithinFirstWeek = (dateString: string): boolean => {
+		const date = new Date(`${dateString}T00:00:00`);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const diffDays = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+		return diffDays >= 0 && diffDays < 7;
 	};
+
+	if (!nextDate || !nextWeekDate || !nextDateWeather || !nextWeekDateWeather) {
+		return (
+			<div className="dates-wrapper">
+				<p>{t('UNAVAILABLE_FOR_DATES')}</p>
+			</div>
+		);
+	}
+
 	const weatherNextDateMaxMin = extractTemperatureRange(nextDateHourlyData);
 	const nextDateCategories = nextDateHourlyData.length > 0 ? getDateCategories(nextDate, nextDateHourlyData) : [];
 	const nextDateOptions = {
@@ -68,14 +142,14 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			},
 			animations: {
 				enabled: true,
-				speed: 800, // Animation speed for initial rendering
+				speed: 800,
 				animateGradually: {
-					enabled: true, // Gradual animation
-					delay: 150 // Delay between animated points
+					enabled: true,
+					delay: 150
 				},
 				dynamicAnimation: {
-					enabled: true, // Dynamic updates animation
-					speed: 350 // Speed for dynamic updates
+					enabled: true,
+					speed: 350
 				}
 			}
 		},
@@ -87,17 +161,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			categories: nextDateCategories,
 			labels: {
 				style: {
-					colors: nextDateCategories.map((hour) => {
-						// Change color for the first and last hour
-						if (
-							hour === nextDateCategories[0] ||
-							hour === nextDateCategories[nextDateCategories.length - 1]
-						) {
-							return '#AAA';
-						}
-
-						return '#000'; // Default color for other hours
-					}),
+					colors: getLabelColors(nextDateCategories),
 					fontSize: '11px'
 				}
 			}
@@ -106,46 +170,23 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			max: weatherNextDateMaxMin.maxTemp,
 			min: weatherNextDateMaxMin.minTemp,
 			title: {
-				text: 'Temperature (°F)'
+				text: t('TEMPERATURE_UNIT')
 			}
 		},
 		annotations: {
-			xaxis: [
-				{
-					x: nextDateCategories[1], // First hour (e.g., "11:00 AM")
-					borderColor: '#3F88C5',
-					label: {
-						text: nextDateCategories[1],
-						style: {
-							color: '#FFF',
-							background: '#3F88C5'
-						}
-					}
-				},
-				{
-					x: nextDateCategories[nextDateCategories.length - 2], // Last hour (e.g., "06:00 PM")
-					borderColor: '#3F88C5',
-					label: {
-						text: nextDateCategories[nextDateCategories.length - 2],
-						style: {
-							color: '#FFF',
-							background: '#3F88C5'
-						}
-					}
-				}
-			]
+			xaxis: getXAxisAnnotations(nextDateCategories)
 		},
 		responsive: [
 			{
-				breakpoint: 768, // Mobile breakpoint
+				breakpoint: 768,
 				options: {
 					chart: {
-						height: 250 // Smaller height for mobile
+						height: 250
 					},
 					xaxis: {
 						labels: {
 							style: {
-								fontSize: '10px' // Smaller font size for mobile
+								fontSize: '10px'
 							}
 						}
 					}
@@ -156,37 +197,13 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 	const nextDateSeries = [
 		{
 			name: 'Temperature',
-			data: nextDateHourlyData.map((hour) => hour.temp) // Extract temperature data
+			data: nextDateHourlyData.map((hour) => hour.temp)
 		}
 	];
-	const nextDateDescription = () => {
-		return (
-			<>
-				<p>{nextDateWeather.description}</p>
-				<p>
-					<WeatherIcon
-						icon="wind"
-						size={16}
-						className="inline-block mr-8"
-					/>
-					winds {nextDateWeather.windspeed} mph
-				</p>
-				<p>
-					<WeatherIcon
-						icon="rain"
-						size={16}
-						className="inline-block mr-8"
-					/>
-					{nextDateWeather.precipprob === 0 ? 'No rain' : `${nextDateWeather.precipprob}% chance rain`}
-				</p>
-			</>
-		);
-	};
 
-	// Prepare chart data for Next Week Date
 	const weatherNextWeekDateMaxMin = extractTemperatureRange(nextWeekDateHourlyData);
 	const nextWeekDateCategories =
-		nextWeekDateHourlyData.length > 0 ? getDateCategories(nextDate, nextWeekDateHourlyData) : [];
+		nextWeekDateHourlyData.length > 0 ? getDateCategories(nextWeekDate, nextWeekDateHourlyData) : [];
 	const nextWeekDateOptions = {
 		chart: {
 			type: 'line' as const,
@@ -198,14 +215,14 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			},
 			animations: {
 				enabled: true,
-				speed: 800, // Animation speed for initial rendering
+				speed: 800,
 				animateGradually: {
-					enabled: true, // Gradual animation
-					delay: 150 // Delay between animated points
+					enabled: true,
+					delay: 150
 				},
 				dynamicAnimation: {
-					enabled: true, // Dynamic updates animation
-					speed: 350 // Speed for dynamic updates
+					enabled: true,
+					speed: 350
 				}
 			}
 		},
@@ -218,17 +235,7 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			tickPlacement: 'on',
 			labels: {
 				style: {
-					colors: nextDateCategories.map((hour) => {
-						// Change color for the first and last hour
-						if (
-							hour === nextDateCategories[0] ||
-							hour === nextDateCategories[nextDateCategories.length - 1]
-						) {
-							return '#AAA';
-						}
-
-						return '#000'; // Default color for other hours
-					}),
+					colors: getLabelColors(nextWeekDateCategories),
 					fontSize: '11px'
 				}
 			}
@@ -237,46 +244,23 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 			max: weatherNextWeekDateMaxMin.maxTemp,
 			min: weatherNextWeekDateMaxMin.minTemp,
 			title: {
-				text: 'Temperature (°F)'
+				text: t('TEMPERATURE_UNIT')
 			}
 		},
 		annotations: {
-			xaxis: [
-				{
-					x: nextWeekDateCategories[1], // First hour (e.g., "11:00 AM")
-					borderColor: '#3F88C5',
-					label: {
-						text: nextWeekDateCategories[1],
-						style: {
-							color: '#FFF',
-							background: '#3F88C5'
-						}
-					}
-				},
-				{
-					x: nextWeekDateCategories[nextWeekDateCategories.length - 2], // Last hour (e.g., "06:00 PM")
-					borderColor: '#3F88C5',
-					label: {
-						text: nextWeekDateCategories[nextWeekDateCategories.length - 2],
-						style: {
-							color: '#FFF',
-							background: '#3F88C5'
-						}
-					}
-				}
-			]
+			xaxis: getXAxisAnnotations(nextWeekDateCategories)
 		},
 		responsive: [
 			{
-				breakpoint: 768, // Mobile breakpoint
+				breakpoint: 768,
 				options: {
 					chart: {
-						height: 250 // Smaller height for mobile
+						height: 250
 					},
 					xaxis: {
 						labels: {
 							style: {
-								fontSize: '10px' // Smaller font size for mobile
+								fontSize: '10px'
 							}
 						}
 					}
@@ -287,69 +271,9 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 	const nextWeekDateSeries = [
 		{
 			name: 'Temperature',
-			data: nextWeekDateHourlyData.map((hour) => hour.temp) // Extract temperature data
+			data: nextWeekDateHourlyData.map((hour) => hour.temp)
 		}
 	];
-	const nextWeekDateDescription = () => {
-		return (
-			<>
-				<p>{nextWeekDateWeather.description}</p>
-				<p>
-					<WeatherIcon
-						icon="wind"
-						size={16}
-						className="inline-block mr-8"
-					/>
-					winds {nextWeekDateWeather.windspeed} mph
-				</p>
-				<p>
-					<WeatherIcon
-						icon="rain"
-						size={16}
-						className="inline-block mr-8"
-					/>
-					{nextWeekDateWeather.precipprob === 0
-						? 'No rain'
-						: `${nextWeekDateWeather.precipprob}% chance rain`}
-				</p>
-			</>
-		);
-	};
-
-	const formatDateToDescription = (dateString: string): string => {
-		// Parse the dateString to a Date object
-		const date = new Date(`${dateString}T00:00:00`);
-		const today = new Date();
-
-		// Reset time to midnight to compare only the date part
-		today.setHours(0, 0, 0, 0);
-
-		// Calculate the difference in days
-		const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in a day
-		const diffDays = Math.round((date.getTime() - today.getTime()) / oneDay);
-
-		// Determine "This" or "Next"
-		let description: string;
-
-		if (diffDays >= 0 && diffDays < 7) {
-			description = `This ${date.toLocaleDateString('en-US', { weekday: 'long' })}`;
-		} else if (diffDays >= 7 && diffDays < 14) {
-			description = `Next ${date.toLocaleDateString('en-US', { weekday: 'long' })}`;
-		} else {
-			description = date.toLocaleDateString('en-US', { weekday: 'long' });
-		}
-
-		// Add ordinal suffix to the day of the month
-		const dayOfMonth = date.getDate();
-		const ordinalSuffix = (n: number): string => {
-			const s = ['th', 'st', 'nd', 'rd'];
-			const v = n % 100;
-			return s[(v - 20) % 10] || s[v] || s[0];
-		};
-		const formattedDay = `${dayOfMonth}${ordinalSuffix(dayOfMonth)}`;
-
-		return `${description} the ${formattedDay}`;
-	};
 
 	return (
 		<div className="dates-wrapper">
@@ -358,10 +282,42 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				series={nextDateSeries}
 				type="line"
 				height={350}
-				graphTitle={<span className="color-next-day">{formatDateToDescription(nextDate) || 'N/A'}</span>}
+				graphTitle={
+					<span className={isWithinFirstWeek(nextDate) ? 'color-next-day' : 'color-nextweek-day'}>
+						{formatDateToDescription(nextDate) || 'N/A'}
+					</span>
+				}
 				graphIcon={<WeatherIcon icon={nextDateWeather.icon} />}
-				graphDescription={nextDateDescription()}
-				graphBottom={<p>{selectedTime}</p>}
+				graphDescription={
+					<>
+						{nextDateWeather.isEstimated && (
+							<p>
+								<strong>{t('ESTIMATED')}</strong>{' '}
+								<span>{t('CONFIDENCE', { value: nextDateWeather.confidence || 'medium' })}</span>
+							</p>
+						)}
+						<p>{nextDateWeather.description}</p>
+						<p>
+							<WeatherIcon
+								icon="wind"
+								size={16}
+								className="inline-block mr-8"
+							/>
+							{t('WINDS', { speed: nextDateWeather.windspeed })}
+						</p>
+						<p>
+							<WeatherIcon
+								icon="rain"
+								size={16}
+								className="inline-block mr-8"
+							/>
+							{nextDateWeather.precipprob === 0
+								? t('NO_RAIN')
+								: t('CHANCE_RAIN', { chance: nextDateWeather.precipprob })}
+						</p>
+					</>
+				}
+				graphBottom={<p>{t(selectedTime.toUpperCase())}</p>}
 			/>
 
 			<ApexChart
@@ -370,11 +326,41 @@ const WeatherContent: React.FC<WeatherContentProps> = ({
 				type="line"
 				height={350}
 				graphTitle={
-					<span className="color-nextweek-day">{formatDateToDescription(nextWeekDate) || 'N/A'}</span>
+					<span className={isWithinFirstWeek(nextWeekDate) ? 'color-next-day' : 'color-nextweek-day'}>
+						{formatDateToDescription(nextWeekDate) || 'N/A'}
+					</span>
 				}
 				graphIcon={<WeatherIcon icon={nextWeekDateWeather.icon} />}
-				graphDescription={nextWeekDateDescription()}
-				graphBottom={<p>{selectedTime}</p>}
+				graphDescription={
+					<>
+						{nextWeekDateWeather.isEstimated && (
+							<p>
+								<strong>{t('ESTIMATED')}</strong>{' '}
+								<span>{t('CONFIDENCE', { value: nextWeekDateWeather.confidence || 'medium' })}</span>
+							</p>
+						)}
+						<p>{nextWeekDateWeather.description}</p>
+						<p>
+							<WeatherIcon
+								icon="wind"
+								size={16}
+								className="inline-block mr-8"
+							/>
+							{t('WINDS', { speed: nextWeekDateWeather.windspeed })}
+						</p>
+						<p>
+							<WeatherIcon
+								icon="rain"
+								size={16}
+								className="inline-block mr-8"
+							/>
+							{nextWeekDateWeather.precipprob === 0
+								? t('NO_RAIN')
+								: t('CHANCE_RAIN', { chance: nextWeekDateWeather.precipprob })}
+						</p>
+					</>
+				}
+				graphBottom={<p>{t(selectedTime.toUpperCase())}</p>}
 			/>
 		</div>
 	);

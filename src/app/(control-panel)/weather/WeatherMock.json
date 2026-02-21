@@ -3,7 +3,7 @@
 	"latitude": 37.7494,
 	"longitude": -122.425,
 	"resolvedAddress": "Dolores St, San Francisco, CA 94110, United States",
-	"address": "Dolores Park, SF",
+	"address": "San Francisco, CA",
 	"timezone": "America/Los_Angeles",
 	"tzoffset": -8,
 	"days": [
@@ -709,7 +709,9 @@
 			"precip": 0.118,
 			"precipprob": 3,
 			"precipcover": 4.17,
-			"preciptype": ["rain"],
+			"preciptype": [
+				"rain"
+			],
 			"snow": 0,
 			"snowdepth": null,
 			"windgust": 12.3,
@@ -1176,7 +1178,9 @@
 					"precipprob": 2,
 					"snow": null,
 					"snowdepth": null,
-					"preciptype": ["rain"],
+					"preciptype": [
+						"rain"
+					],
 					"windgust": 12.3,
 					"windspeed": 7.2,
 					"winddir": 340,
@@ -1397,7 +1401,9 @@
 			"precip": 0.067,
 			"precipprob": 3.2,
 			"precipcover": 4.17,
-			"preciptype": ["rain"],
+			"preciptype": [
+				"rain"
+			],
 			"snow": 0,
 			"snowdepth": null,
 			"windgust": 9.4,
@@ -2026,7 +2032,9 @@
 					"precipprob": 0,
 					"snow": null,
 					"snowdepth": null,
-					"preciptype": ["rain"],
+					"preciptype": [
+						"rain"
+					],
 					"windgust": 4,
 					"windspeed": 4,
 					"winddir": 350.6,
@@ -2085,7 +2093,9 @@
 			"precip": 0.272,
 			"precipprob": 9.7,
 			"precipcover": 8.33,
-			"preciptype": ["rain"],
+			"preciptype": [
+				"rain"
+			],
 			"snow": 0,
 			"snowdepth": null,
 			"windgust": 8.1,
@@ -2228,7 +2238,9 @@
 					"precipprob": 0,
 					"snow": null,
 					"snowdepth": null,
-					"preciptype": ["rain"],
+					"preciptype": [
+						"rain"
+					],
 					"windgust": 6,
 					"windspeed": 6,
 					"winddir": 7.1,
@@ -2714,7 +2726,9 @@
 					"precipprob": 9.7,
 					"snow": null,
 					"snowdepth": null,
-					"preciptype": ["rain"],
+					"preciptype": [
+						"rain"
+					],
 					"windgust": 8.1,
 					"windspeed": 6.9,
 					"winddir": 11.1,
@@ -2773,7 +2787,9 @@
 			"precip": 0.012,
 			"precipprob": 9.7,
 			"precipcover": 4.17,
-			"preciptype": ["rain"],
+			"preciptype": [
+				"rain"
+			],
 			"snow": 0,
 			"snowdepth": null,
 			"windgust": 9.4,
@@ -2916,7 +2932,9 @@
 					"precipprob": 6.5,
 					"snow": null,
 					"snowdepth": null,
-					"preciptype": ["rain"],
+					"preciptype": [
+						"rain"
+					],
 					"windgust": 8.9,
 					"windspeed": 7.8,
 					"winddir": 34.9,

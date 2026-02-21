@@ -1,7 +1,13 @@
-/* eslint-disable no-console */
 import React from 'react';
 import WeatherContent from '@fuse/core/WeatherContent';
-import { apiWeather, FetchApiError, WeatherData, WeatherDayData, WeatherHourData } from '@/utils/apiWeather';
+import {
+	apiWeather,
+	FetchApiError,
+	getWeatherDayOrProjection,
+	WeatherData,
+	WeatherDayData,
+	WeatherHourData
+} from '@/utils/apiWeather';
 import FusePageSimple from '@fuse/core/FusePageSimple';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -11,7 +17,6 @@ import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import './Weather.css';
-// import weatherMockData from './WeatherMock.json';
 
 const Root = styled(FusePageSimple)(({ theme }) => ({
 	'& .FusePageSimple-header': {
@@ -25,8 +30,75 @@ const Root = styled(FusePageSimple)(({ theme }) => ({
 	'& .FusePageSimple-sidebarContent': {}
 }));
 
+const formatDate = (date: Date): string => {
+	const year = date.getFullYear();
+	const month = `${date.getMonth() + 1}`.padStart(2, '0');
+	const day = `${date.getDate()}`.padStart(2, '0');
+	return `${year}-${month}-${day}`;
+};
+
+const parseLocalDate = (value: string): Date => {
+	const [year, month, day] = value.split('-').map(Number);
+	return new Date(year, month - 1, day);
+};
+
+const FALLBACK_LOCATION = 'San Francisco, CA';
+const DAY_VALUES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+
+const getCurrentDaySelection = (): string => {
+	return DAY_VALUES[new Date().getDay()];
+};
+
+const getCurrentTimeSelection = (): string => {
+	const hour = new Date().getHours();
+
+	if (hour < 12) {
+		return 'morning';
+	}
+
+	if (hour < 18) {
+		return 'afternoon';
+	}
+
+	return 'evening';
+};
+
+const extractApiErrorMessage = (data: unknown): string | null => {
+	if (!data || typeof data !== 'object') {
+		return null;
+	}
+
+	const errorData = data as Record<string, unknown>;
+	const possibleKeys = ['message', 'reason', 'detail', 'error'];
+
+	for (const key of possibleKeys) {
+		const value = errorData[key];
+
+		if (typeof value === 'string' && value.trim()) {
+			return value;
+		}
+	}
+
+	return null;
+};
+
 const Weather = () => {
 	const [error, setError] = React.useState<string | null>(null);
+	const [isLoading, setIsLoading] = React.useState<boolean>(false);
+	const [weather, setWeather] = React.useState<WeatherData | null>(null);
+	const [location, setLocation] = React.useState<string>(FALLBACK_LOCATION);
+	const [selectedDay, setSelectedDay] = React.useState<string>(getCurrentDaySelection);
+	const [selectedTime, setSelectedTime] = React.useState<string>(getCurrentTimeSelection);
+	const [nextDate, setNextDate] = React.useState<string | null>(null);
+	const [nextWeekDate, setNextWeekDate] = React.useState<string | null>(null);
+	const [weekAfterNextDate, setWeekAfterNextDate] = React.useState<string | null>(null);
+	const [nextDateWeather, setNextDateWeather] = React.useState<WeatherDayData | null>(null);
+	const [nextWeekDateWeather, setNextWeekDateWeather] = React.useState<WeatherDayData | null>(null);
+	const [nextDateHourlyData, setNextDateHourlyData] = React.useState<WeatherHourData[]>([]);
+	const [nextWeekDateHourlyData, setNextWeekDateHourlyData] = React.useState<WeatherHourData[]>([]);
+	const [hasWeekAfterNextData, setHasWeekAfterNextData] = React.useState<boolean>(false);
+	const [debounceTimeout, setDebounceTimeout] = React.useState<ReturnType<typeof setTimeout> | null>(null);
+	const isLocationManuallyEditedRef = React.useRef(false);
 
 	const days = [
 		{ value: 'monday', label: 'Every Monday' },
@@ -44,74 +116,113 @@ const Weather = () => {
 		{ value: 'evening', label: 'Evening' }
 	];
 
-	const [weather, setWeather] = React.useState<WeatherData | null>(null);
-	const [location, setLocation] = React.useState<string>('Dolores Park, SF');
-	const [selectedDay, setSelectedDay] = React.useState<string>('friday');
-	const [selectedTime, setSelectedTime] = React.useState<string>('afternoon');
-	const [nextDate, setNextDate] = React.useState<string | null>(null);
-	const [nextWeekDate, setNextWeekDate] = React.useState<string | null>(null);
-	const [nextDateWeather, setNextDateWeather] = React.useState<WeatherDayData | null>(null);
-	const [nextWeekDateWeather, setNextWeekDateWeather] = React.useState<WeatherDayData | null>(null);
-	// Define state for hourly data to be used for the graph
-	const [nextDateHourlyData, setNextDateHourlyData] = React.useState<WeatherHourData[]>([]);
-	const [nextWeekDateHourlyData, setNextWeekDateHourlyData] = React.useState<WeatherHourData[]>([]);
+	const fetchWeatherData = React.useCallback(
+		async (locationOverride?: string) => {
+			const activeLocation = (locationOverride ?? location).trim();
 
-	const fetchWeatherData = async () => {
-		try {
-			if (!nextDate || !nextWeekDate) return;
+			if (!nextDate || !nextWeekDate || !weekAfterNextDate || !activeLocation) {
+				return;
+			}
 
-			setError(null); // Clear previous error messages
-			const weatherData = await apiWeather(location, nextDate, nextWeekDate);
-			setWeather(weatherData);
+			try {
+				setIsLoading(true);
+				setError(null);
 
-			// Map selectedTime to hour range
-			const timeRanges: Record<string, [number, number]> = {
-				morning: [7, 13],
-				afternoon: [11, 18],
-				evening: [16, 22]
-			};
+				const weatherData = await apiWeather(activeLocation, nextDate, weekAfterNextDate);
+				setWeather(weatherData);
 
-			const selectedRange = timeRanges[selectedTime] || [0, 23];
+				const timeRanges: Record<string, [number, number]> = {
+					morning: [7, 13],
+					afternoon: [11, 18],
+					evening: [16, 22]
+				};
+				const selectedRange = timeRanges[selectedTime] || [0, 23];
 
-			const extractWeatherForDates = (data: WeatherData, dates: string[]) => {
-				return dates.map((date) => {
-					const dayData = data.days.find((day) => day.datetime === date);
+				const extractRangeHours = (dayData: WeatherDayData | null): WeatherHourData[] => {
+					if (!dayData) return [];
 
-					if (!dayData) return null;
-
-					const rangeHours = dayData.hours.filter((hour) => {
+					return dayData.hours.filter((hour) => {
 						const fullDatetime = `${dayData.datetime}T${hour.datetime}`;
 						const hourOfDay = new Date(fullDatetime).getHours();
 						return hourOfDay >= selectedRange[0] && hourOfDay <= selectedRange[1];
 					});
+				};
 
-					return { ...dayData, rangeHours };
-				});
-			};
+				const nextDateData = getWeatherDayOrProjection(weatherData, nextDate);
+				const nextWeekDateData = getWeatherDayOrProjection(weatherData, nextWeekDate);
+				const weekAfterNextData = getWeatherDayOrProjection(weatherData, weekAfterNextDate);
 
-			const weatherByDates = extractWeatherForDates(weatherData, [nextDate, nextWeekDate]);
-			const [nextDateData, nextWeekDateData] = weatherByDates;
+				setNextDateWeather(nextDateData || null);
+				setNextWeekDateWeather(nextWeekDateData || null);
+				setNextDateHourlyData(extractRangeHours(nextDateData));
+				setNextWeekDateHourlyData(extractRangeHours(nextWeekDateData));
+				setHasWeekAfterNextData(!!weekAfterNextData);
 
-			setNextDateWeather(nextDateData || null);
-			setNextWeekDateWeather(nextWeekDateData || null);
-			setNextDateHourlyData(nextDateData?.rangeHours || []);
-			setNextWeekDateHourlyData(nextWeekDateData?.rangeHours || []);
-		} catch (err) {
-			if (err instanceof FetchApiError && err.status === 426) {
-				setError('Quota exceeded. Please try again tomorrow.');
-			} else {
-				setError('An unexpected error occurred. Please try again later.');
+				if (!nextDateData || !nextWeekDateData) {
+					setError('No weather data available for selected dates.');
+				}
+			} catch (err) {
+				setWeather(null);
+				setNextDateWeather(null);
+				setNextWeekDateWeather(null);
+				setNextDateHourlyData([]);
+				setNextWeekDateHourlyData([]);
+				setHasWeekAfterNextData(false);
+
+				if (err instanceof FetchApiError) {
+					const apiMessage = extractApiErrorMessage(err.data);
+
+					if (err.status === 404) {
+						setError(apiMessage || 'Location not found. Try a city name or lat,lon coordinates.');
+					} else if (err.status === 429) {
+						setError('Weather service rate limit reached. Please try again in a moment.');
+					} else if (err.status >= 500) {
+						setError('Weather service is temporarily unavailable. Please try again later.');
+					} else {
+						setError(apiMessage || `Weather request failed (${err.status}).`);
+					}
+				} else if (err instanceof Error && err.message) {
+					setError(err.message);
+				} else {
+					setError('An unexpected error occurred. Please try again later.');
+				}
+			} finally {
+				setIsLoading(false);
 			}
-		}
-	};
+		},
+		[location, nextDate, nextWeekDate, selectedTime, weekAfterNextDate]
+	);
 
 	React.useEffect(() => {
-		const getNextDateForDay = (day: string): { next: string; nextWeek: string } => {
-			const today = new Date();
-			const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+		if (!navigator.geolocation) {
+			return;
+		}
 
-			// Mapping of days to their respective indices
-			const daysMap = {
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				if (isLocationManuallyEditedRef.current) {
+					return;
+				}
+
+				const { latitude, longitude } = position.coords;
+				setLocation(`${latitude.toFixed(4)},${longitude.toFixed(4)}`);
+			},
+			() => {
+				setLocation(FALLBACK_LOCATION);
+			},
+			{
+				enableHighAccuracy: false,
+				timeout: 10000,
+				maximumAge: 5 * 60 * 1000
+			}
+		);
+	}, []);
+
+	React.useEffect(() => {
+		const getNextDatesForDay = (day: string): { next: string; nextWeek: string; weekAfterNext: string } => {
+			const today = new Date();
+			const currentDay = today.getDay();
+			const daysMap: Record<string, number> = {
 				sunday: 0,
 				monday: 1,
 				tuesday: 2,
@@ -121,73 +232,81 @@ const Weather = () => {
 				saturday: 6
 			};
 
-			const targetDay = daysMap[day]; // Get the index of the selected day
+			const targetDay = daysMap[day];
 			let daysUntilNext = targetDay - currentDay;
 
-			// If the target day is behind or today, move to the next week's occurrence
 			if (daysUntilNext < 0) {
 				daysUntilNext += 7;
 			}
 
-			// Calculate the next occurrence
 			const next = new Date(today);
 			next.setDate(today.getDate() + daysUntilNext);
 
-			// Calculate the same day next week
 			const nextWeek = new Date(next);
 			nextWeek.setDate(next.getDate() + 7);
 
-			// Format dates to `YYYY-MM-DD`
-			const formatDate = (date: Date) => date.toISOString().split('T')[0];
-			return { next: formatDate(next), nextWeek: formatDate(nextWeek) };
+			const weekAfterNext = new Date(nextWeek);
+			weekAfterNext.setDate(nextWeek.getDate() + 7);
+
+			return {
+				next: formatDate(next),
+				nextWeek: formatDate(nextWeek),
+				weekAfterNext: formatDate(weekAfterNext)
+			};
 		};
 
-		// Update the dates when selectedDay changes
-		const { next, nextWeek } = getNextDateForDay(selectedDay);
-		console.log(next, nextWeek);
+		const { next, nextWeek, weekAfterNext } = getNextDatesForDay(selectedDay);
 		setNextDate(next);
 		setNextWeekDate(nextWeek);
+		setWeekAfterNextDate(weekAfterNext);
 	}, [selectedDay]);
 
 	React.useEffect(() => {
 		fetchWeatherData();
-	}, [nextDate, nextWeekDate, selectedTime]);
+	}, [fetchWeatherData]);
 
-	const [debounceTimeout, setDebounceTimeout] = React.useState<NodeJS.Timeout | null>(null);
 	const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setLocation(e.target.value);
+		const nextLocation = e.target.value;
+		isLocationManuallyEditedRef.current = true;
+		setLocation(nextLocation);
 
-		// Clear existing timeout
 		if (debounceTimeout) {
 			clearTimeout(debounceTimeout);
 		}
 
-		// Set a new timeout
 		const timeout = setTimeout(() => {
-			fetchWeatherData();
-		}, 1000); // 1 second delay
+			fetchWeatherData(nextLocation);
+		}, 1000);
 		setDebounceTimeout(timeout);
 	};
 
-	// Calculate dates relative to the current nextDate
 	const calculateDates = (offset: number) => {
-		if (!nextDate) return;
+		if (!nextDate || !nextWeekDate || !weekAfterNextDate) return;
 
-		const currentNextDate = new Date(nextDate);
-		const currentNextWeekDate = new Date(nextWeekDate || nextDate);
+		const currentNextDate = parseLocalDate(nextDate);
+		const currentNextWeekDate = parseLocalDate(nextWeekDate);
+		const currentWeekAfterNextDate = parseLocalDate(weekAfterNextDate);
 
-		// Move dates by the offset
 		currentNextDate.setDate(currentNextDate.getDate() + offset);
 		currentNextWeekDate.setDate(currentNextWeekDate.getDate() + offset);
+		currentWeekAfterNextDate.setDate(currentWeekAfterNextDate.getDate() + offset);
 
-		const formatDate = (date: Date) => date.toISOString().split('T')[0];
 		setNextDate(formatDate(currentNextDate));
 		setNextWeekDate(formatDate(currentNextWeekDate));
+		setWeekAfterNextDate(formatDate(currentWeekAfterNextDate));
 	};
 
-	// Navigation handlers
 	const handleNext = () => calculateDates(7);
 	const handlePrevious = () => calculateDates(-7);
+
+	const isReadyForWeatherContent = !!(nextDateWeather && nextWeekDateWeather && nextDate && nextWeekDate);
+	const canGoBackward = !!nextDate && parseLocalDate(nextDate).getTime() > new Date().getTime();
+	const disablePrevious = isLoading || !!error || !canGoBackward;
+	const isAtEstimatedBoundary = !!nextWeekDateWeather?.isEstimated;
+	const disableNext = isLoading || !!error || !hasWeekAfterNextData || isAtEstimatedBoundary;
+	const statusMessage = isLoading
+		? 'Loading...'
+		: error || (!isReadyForWeatherContent ? 'No weather data available for selected dates.' : 'Loading...');
 
 	return (
 		<Root
@@ -197,8 +316,8 @@ const Weather = () => {
 						<TextField
 							id="input-with-icon-textfield"
 							placeholder="Location"
-							value={location} // Bind TextField to location state
-							onChange={handleLocationChange} // Update location state on change
+							value={location}
+							onChange={handleLocationChange}
 							InputProps={{
 								startAdornment: (
 									<InputAdornment position="start">
@@ -212,10 +331,10 @@ const Weather = () => {
 					<div className="day-time-wrap">
 						<div>
 							<TextField
-								id="standard-select-currency"
+								id="day-select"
 								select
 								variant="standard"
-								defaultValue={selectedDay}
+								value={selectedDay}
 								onChange={(e) => setSelectedDay(e.target.value)}
 							>
 								{days.map((option) => (
@@ -230,10 +349,10 @@ const Weather = () => {
 						</div>
 						<div>
 							<TextField
-								id="standard-select-currency"
+								id="time-select"
 								select
 								variant="standard"
-								defaultValue={selectedTime}
+								value={selectedTime}
 								onChange={(e) => setSelectedTime(e.target.value)}
 							>
 								{times.map((option) => (
@@ -251,19 +370,16 @@ const Weather = () => {
 			}
 			content={
 				<div className="p-24">
-					{error && <p className="error-message">{error}</p>}
 					<div className="arrows">
 						<button
 							onClick={handlePrevious}
-							disabled={
-								!nextDate || new Date(nextDate).getTime() <= new Date().getTime() // Disable if nextDate is today or earlier
-							}
+							disabled={disablePrevious}
 						>
 							<ArrowBackIosIcon />
 						</button>
 
 						<div className="weather-content">
-							{weather ? (
+							{weather && isReadyForWeatherContent ? (
 								<WeatherContent
 									nextDate={nextDate}
 									nextDateWeather={nextDateWeather}
@@ -274,11 +390,14 @@ const Weather = () => {
 									selectedTime={selectedTime}
 								/>
 							) : (
-								<p>Loading...</p>
+								<p className={error ? 'error-message' : ''}>{statusMessage}</p>
 							)}
 						</div>
 
-						<button onClick={handleNext}>
+						<button
+							onClick={handleNext}
+							disabled={disableNext}
+						>
 							<ArrowForwardIosIcon />
 						</button>
 					</div>

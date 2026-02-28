@@ -10,6 +10,7 @@ import Tab from '@mui/material/Tab';
 import CardContent from '@mui/material/CardContent';
 import _ from 'lodash';
 import { lighten } from '@mui/material/styles';
+import { assetPath } from '@/utils/assetPath';
 import JwtLoginTab from './tabs/JwtSignInTab';
 import FirebaseSignInTab from './tabs/FirebaseSignInTab';
 import AwsSignInTab from './tabs/AwsSignInTab';
@@ -18,19 +19,19 @@ const tabs = [
 	{
 		id: 'jwt',
 		title: 'JWT',
-		logo: '/assets/images/logo/jwt.svg',
+		logo: assetPath('/assets/images/logo/jwt.svg'),
 		logoClass: 'h-36 p-4 bg-black rounded-lg'
 	},
 	{
 		id: 'firebase',
 		title: 'Firebase',
-		logo: '/assets/images/logo/firebase.svg',
+		logo: assetPath('/assets/images/logo/firebase.svg'),
 		logoClass: 'h-36'
 	},
 	{
 		id: 'aws',
 		title: 'AWS',
-		logo: '/assets/images/logo/aws-amplify.svg',
+		logo: assetPath('/assets/images/logo/aws-amplify.svg'),
 		logoClass: 'h-36'
 	}
 ];
@@ -51,7 +52,7 @@ function SignInPage() {
 				<CardContent className="mx-auto w-full max-w-320 sm:mx-0 sm:w-320">
 					<img
 						className="w-48"
-						src="/assets/images/logo/logo.svg"
+						src={assetPath('/assets/images/logo/logo.svg')}
 						alt="logo"
 					/>
 
@@ -201,10 +202,10 @@ function SignInPage() {
 								}
 							}}
 						>
-							<Avatar src="/assets/images/avatars/female-18.jpg" />
-							<Avatar src="/assets/images/avatars/female-11.jpg" />
-							<Avatar src="/assets/images/avatars/male-09.jpg" />
-							<Avatar src="/assets/images/avatars/male-16.jpg" />
+							<Avatar src={assetPath('/assets/images/avatars/female-18.jpg')} />
+							<Avatar src={assetPath('/assets/images/avatars/female-11.jpg')} />
+							<Avatar src={assetPath('/assets/images/avatars/male-09.jpg')} />
+							<Avatar src={assetPath('/assets/images/avatars/male-16.jpg')} />
 						</AvatarGroup>
 
 						<div className="ml-16 font-medium tracking-tight text-gray-400">

@@ -114,7 +114,7 @@ function NavbarStyle3Content(props: NavbarStyle3ContentProps) {
 				>
 					<img
 						className="my-32 w-44"
-						src="/assets/images/logo/logo.svg"
+						src={`${import.meta.env.BASE_URL}assets/images/logo/logo.svg`}
 						alt="logo"
 					/>
 

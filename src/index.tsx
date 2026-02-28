@@ -7,12 +7,13 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import routes from 'src/configs/routesConfig';
 import { worker } from '@mock-utils/mswMockAdapter';
 import { API_BASE_URL } from '@/utils/apiFetch';
+import { assetPath } from '@/utils/assetPath';
 
 async function mockSetup() {
 	return worker.start({
 		onUnhandledRequest: 'bypass',
 		serviceWorker: {
-			url: `${API_BASE_URL}/mockServiceWorker.js`
+			url: API_BASE_URL === '/' ? assetPath('/mockServiceWorker.js') : `${API_BASE_URL}/mockServiceWorker.js`
 		}
 	});
 }
@@ -39,7 +40,10 @@ mockSetup().then(() => {
 		}
 	});
 
-	const router = createBrowserRouter(routes);
+	const routerBase = import.meta.env.BASE_URL === '/' ? '/' : import.meta.env.BASE_URL.replace(/\/$/, '');
+	const router = createBrowserRouter(routes, {
+		basename: routerBase
+	});
 
 	root.render(<RouterProvider router={router} />);
 });

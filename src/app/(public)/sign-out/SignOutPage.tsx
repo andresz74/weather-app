@@ -1,6 +1,7 @@
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Link from '@fuse/core/Link';
+import { assetPath } from '@/utils/assetPath';
 
 /**
  * The sign out page.
@@ -12,7 +13,7 @@ function SignOutPage() {
 				<div className="flex flex-col items-center mx-auto w-full max-w-320 sm:mx-0 sm:w-320">
 					<img
 						className="mx-auto w-48"
-						src="/assets/images/logo/logo.svg"
+						src={assetPath('/assets/images/logo/logo.svg')}
 						alt="logo"
 					/>
 

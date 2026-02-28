@@ -8,6 +8,7 @@ import { useState } from 'react';
 import Link from '@fuse/core/Link';
 import { LanguageType } from '@i18n/I18nContext';
 import useI18n from '@i18n/useI18n';
+import { assetPath } from '@/utils/assetPath';
 
 /**
  * The language switcher.
@@ -39,7 +40,7 @@ function LanguageSwitcher() {
 			>
 				<img
 					className="mx-4 min-w-20"
-					src={`/assets/images/flags/${language.flag}.svg`}
+					src={assetPath(`/assets/images/flags/${language.flag}.svg`)}
 					alt={language.title}
 				/>
 
@@ -79,7 +80,7 @@ function LanguageSwitcher() {
 						<ListItemIcon className="min-w-36">
 							<img
 								className="min-w-20"
-								src={`/assets/images/flags/${lng.flag}.svg`}
+								src={assetPath(`/assets/images/flags/${lng.flag}.svg`)}
 								alt={lng.title}
 							/>
 						</ListItemIcon>

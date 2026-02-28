@@ -12,7 +12,7 @@ function FuseSplashScreen() {
 			<div className="logo">
 				<img
 					width="128"
-					src="/assets/images/logo/logo.svg"
+					src={`${import.meta.env.BASE_URL}assets/images/logo/logo.svg`}
 					alt="logo"
 				/>
 			</div>

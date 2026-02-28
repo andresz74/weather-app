@@ -1,9 +1,27 @@
 import { v4 as uuidv4 } from 'uuid';
 import mockDb from './mockDb.json';
 
+const LOCAL_ASSET_PATH = /^\/assets\//;
+
+function withBaseAssetPaths<T>(value: T): T {
+	if (typeof value === 'string') {
+		return (LOCAL_ASSET_PATH.test(value) ? `${import.meta.env.BASE_URL}${value.replace(/^\/+/, '')}` : value) as T;
+	}
+
+	if (Array.isArray(value)) {
+		return value.map((item) => withBaseAssetPaths(item)) as T;
+	}
+
+	if (value && typeof value === 'object') {
+		return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withBaseAssetPaths(item)])) as T;
+	}
+
+	return value;
+}
+
 // Helper function to simulate database operations
 function getTable<T>(tableName: string) {
-	return (mockDb[tableName] || []) as T[];
+	return withBaseAssetPaths((mockDb[tableName] || []) as T[]);
 }
 
 function saveTable<T>(tableName: string, items: T[]) {

@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles';
 import { Box, BoxProps } from '@mui/material';
 import Icon from '@mui/material/Icon';
 import clsx from 'clsx';
+import { assetPath } from '@/utils/assetPath';
 
 type FuseSvgIconProps = BoxProps & {
 	fill?: string;
@@ -71,7 +72,7 @@ function FuseSvgIcon(props: FuseSvgIconProps) {
 			ref={ref}
 			color={color}
 		>
-			<use xlinkHref={`/assets/icons/${iconPath}`} />
+			<use xlinkHref={assetPath(`/assets/icons/${iconPath}`)} />
 		</Root>
 	);
 }

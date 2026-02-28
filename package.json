@@ -120,6 +120,8 @@
     "start": "npm run dev",
     "dev": "vite",
     "build": "NODE_OPTIONS=--max-old-space-size=4096 tsc && vite build",
+    "build:nc110": "DEPLOY_TARGET=nc110 npm run build",
+    "build:cloudflare": "DEPLOY_TARGET=cloudflare npm run build",
     "lint": "eslint ./src --config ./eslint.config.mjs",
     "lint:fix": "eslint --fix ./src --config ./eslint.config.mjs",
     "preview": "vite preview",

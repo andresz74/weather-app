@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { assetPath } from '@/utils/assetPath';
 
 /**
  * DemoContent is a React component used to render a demo content on the page.
@@ -9,7 +10,7 @@ function DemoContent() {
 	return (
 		<div>
 			<img
-				src="/assets/images/demo-content/morain-lake.jpg"
+				src={assetPath('/assets/images/demo-content/morain-lake.jpg')}
 				alt="beach"
 				style={{
 					maxWidth: '640px',
